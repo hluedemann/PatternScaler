@@ -1,6 +1,9 @@
 import argparse
 import os
 from PIL import Image
+from tqdm import tqdm
+from concurrent.futures import ProcessPoolExecutor
+from multiprocessing import Manager
 
 
 def get_argument_parser():
@@ -11,9 +14,9 @@ def get_argument_parser():
 
     return parser
 
-def prepare_output_folders(root_dir) -> None:
+def prepare_output_folders(root_dir, img_iter):
 
-    dir = os.path.join(root_dir, "Extracted")
+    dir = os.path.join(root_dir, "Extracted", f"image_{img_iter}".zfill(3))
     os.makedirs(dir, exist_ok=True)
 
     return dir
@@ -39,7 +42,7 @@ def find_starting_point(image):
 
     for y in range(height):
         for x in range(width):
-            color = image.getpixel([x, y])
+            color = image.getpixel((x, y))
             if color != (0, 0, 0, 0):
                 return (x, y)
             
@@ -53,12 +56,12 @@ def find_clipart_area(image, start_point):
 
     while stack:
         x, y = stack.pop()
-        pixel_value = image.getpixel([x, y])
+        pixel_value = image.getpixel((x, y))
 
         if pixel_value != (0, 0, 0, 0):
             result[(x, y)] = pixel_value
 
-            image.putpixel([x, y], (0, 0, 0, 0))
+            image.putpixel((x, y), (0, 0, 0, 0))
 
             neighbors = [
                 (x, y - 1),  # top
@@ -75,7 +78,7 @@ def find_clipart_area(image, start_point):
     return result
 
 def is_clipart(result):
-    if len(result) < 500000:
+    if len(result) < 1000:
         return False
     else:
         return True
@@ -95,32 +98,43 @@ def save_clipart(result, root_dir, iter):
     out_path = os.path.join(root_dir, str(iter).zfill(4) + ".png")
     new_image.save(out_path)
 
-def process_images(root_dir):
+def process_image(image_path, save_dir, iter_clipart, lock):
+    image = Image.open(image_path)
+    
+    while True:
+        start_point = find_starting_point(image)
+        if start_point is None:
+            break
+        
+        result = find_clipart_area(image, start_point)
 
-    save_dir = prepare_output_folders(root_dir)
-    images = get_images(root_dir)
-
-    iter_clipart = 0
-    for image in images:
-
-        while True:
-            start_point = find_starting_point(image)
-            if start_point == None:
-                break
-            
-            result = find_clipart_area(image, start_point)
-
-            if is_clipart(result):
-
-                save_clipart(result, save_dir, iter_clipart)
-                iter_clipart += 1
-            
+        if is_clipart(result):
+            with lock:
+                current_iter_clipart = iter_clipart.value
+                iter_clipart.value += 1
+            save_clipart(result, save_dir, current_iter_clipart)
 
 
+def process_images_parallel(root_dir, iter_clipart, lock):
+    images = [os.path.join(root_dir, "Background_Removed", img_path) for img_path in os.listdir(os.path.join(root_dir, "Background_Removed"))]
+
+    with ProcessPoolExecutor() as executor:
+        futures = []
+        for img_iter, image_path in enumerate(images):
+            save_dir = prepare_output_folders(root_dir, img_iter)
+            future = executor.submit(process_image, image_path, save_dir, iter_clipart, lock)
+            futures.append(future)
+
+        # Wait for all tasks to complete
+        for future in tqdm(futures, total=len(futures)):
+            future.result()
 
 if __name__ == "__main__":
-
     parser = get_argument_parser()
     args = parser.parse_args()
 
-    process_images(args.folder)
+    with Manager() as manager:
+        iter_clipart = manager.Value('i', 0)
+        lock = manager.Lock()
+        process_images_parallel(args.folder, iter_clipart, lock)
+        
