@@ -4,6 +4,7 @@ import os
 from PIL import Image
 from tqdm import tqdm
 
+
 def get_argument_parser():
 
     parser = argparse.ArgumentParser(description="Options for Pattern Scaler")
@@ -66,7 +67,6 @@ def process_images(root_dir: string) -> None:
     for i, img in tqdm(enumerate(images), total=len(images)):
         
         #Transparent
-
         img.save(os.path.join(save_dirs[4], f"pattern_transparent_{str(i+1).zfill(2)}.png"))
 
         large_img = Image.new("RGBA", (7200, 7200))
@@ -77,7 +77,6 @@ def process_images(root_dir: string) -> None:
         large_img.save(os.path.join(save_dirs[9], f"pattern_transparent_2x2_{str(i+1).zfill(2)}.png"))
 
         # White
-
         new_image = Image.new("RGBA", img.size, "WHITE")
         new_image.paste(img, mask=img)
         new_image = new_image.convert("RGB")
@@ -95,7 +94,6 @@ def process_images(root_dir: string) -> None:
         new_image.save(os.path.join(save_dirs[2], f"pattern_white_{str(i+1).zfill(2)}.jpg"), quality=100, subsampling=0)
 
         ## Black
-
         new_image = Image.new("RGBA", img.size, "BLACK")
         new_image.paste(img, mask=img)
         new_image = new_image.convert("RGB")
@@ -103,7 +101,6 @@ def process_images(root_dir: string) -> None:
         new_image.save(os.path.join(save_dirs[1], f"pattern_black_{str(i+1).zfill(2)}.png"))
         new_image.save(os.path.join(save_dirs[3], f"pattern_black_{str(i+1).zfill(2)}.jpg"), quality=100, subsampling=0)
 
-                
         large_img = Image.new("RGB", (7200, 7200))
         large_img.paste(new_image, (0, 0))
         large_img.paste(new_image, (0, 3600))
@@ -111,7 +108,6 @@ def process_images(root_dir: string) -> None:
         large_img.paste(new_image, (3600, 3600))
         large_img.save(os.path.join(save_dirs[8], f"pattern_black_{str(i+1).zfill(2)}.png"))
         large_img.save(os.path.join(save_dirs[6], f"pattern_black_{str(i+1).zfill(2)}.jpg"), quality=95, subsampling=0)
-
 
 
 if __name__ == "__main__":

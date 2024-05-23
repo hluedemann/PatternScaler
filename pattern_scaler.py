@@ -4,6 +4,7 @@ import os
 from PIL import Image
 from tqdm import tqdm
 
+
 def get_argument_parser():
 
     parser = argparse.ArgumentParser(description="Options for Pattern Scaler")
@@ -11,7 +12,6 @@ def get_argument_parser():
                         help='root folder of the patterns')
 
     return parser
-
 
 def prepare_output_folders(root_dir: string) -> list:
 
@@ -26,7 +26,6 @@ def prepare_output_folders(root_dir: string) -> list:
 
     return [dir_jpg, dir_png, dir_2x2]
 
-
 def get_images(root_dir: string) -> list:
 
     dir = os.path.join(root_dir, "Upscaled")
@@ -40,7 +39,6 @@ def get_images(root_dir: string) -> list:
         raise FileNotFoundError(f"The folder {dir} could not be opend!")
 
     return images
-
 
 def process_images(root_dir: string) -> None:
 
