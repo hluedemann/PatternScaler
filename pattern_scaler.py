@@ -33,12 +33,15 @@ def get_images(root_dir: string) -> list:
 
     try:
         for img_path in os.listdir(dir):
-            image = Image.open(os.path.join(dir, img_path))
-            images.append(image)
-    except:
-        raise FileNotFoundError(f"The folder {dir} could not be opend!")
+            # Ignore hidden files (those starting with a dot)
+            if not img_path.startswith('.'):
+                image = Image.open(os.path.join(dir, img_path))
+                images.append(image)
+    except FileNotFoundError:
+        raise FileNotFoundError(f"The folder {dir} could not be opened!")
 
     return images
+
 
 def process_images(root_dir: string) -> None:
 
